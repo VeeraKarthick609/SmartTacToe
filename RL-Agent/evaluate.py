@@ -7,7 +7,7 @@ from utils.helper import Helper
 def evaluate_dqn(episodes=100):
     env = TicTacToeEnv()
     agent = DQNAgent()
-    agent.load_model('dqn_model.pth')
+    agent.load_model('weights/dqn_final_model.pth')
 
     wins, losses, draws = 0, 0, 0
 
