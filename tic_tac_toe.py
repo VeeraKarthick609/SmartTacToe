@@ -2,10 +2,28 @@ import streamlit as st
 import torch
 import numpy as np
 from utils.helper import Helper
-from rl_agent.agent import DQNAgent  # Assuming you've put your DQN code in a file named dqn_agent.py
+from rl_agent.agent import DQNAgent
 
 def main():
     st.set_page_config(page_title="Tic-Tac-Toe AI", page_icon="🎮", layout="centered")
+    
+    # Custom CSS for responsiveness
+    st.markdown("""
+    <style>
+    .stButton > button {
+        width: 100%;
+        height: 100px;
+        font-size: 2rem;
+    }
+    @media (max-width: 600px) {
+        .stButton > button {
+            height: 80px;
+            font-size: 1.5rem;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.title("🎮 Tic-Tac-Toe Challenge 🤖")
 
     # AI type selection
@@ -18,10 +36,10 @@ def main():
 
     # Initialize DQN Agent
     if "dqn_agent" not in st.session_state:
-        st.session_state.dqn_agent = DQNAgent(device="cpu")  # or "cuda" if GPU is available
-        st.session_state.dqn_agent.load_model("weights/dqn_final_model.pth")  # Load pre-trained model
+        st.session_state.dqn_agent = DQNAgent(device="cpu")
+        st.session_state.dqn_agent.load_model("weights/dqn_final_model.pth")
 
-    # Initialize session state to store game data across interactions
+    # Initialize session state
     if "board" not in st.session_state:
         st.session_state.board = Helper.initialize_board()
         st.session_state.current_player = "X"
@@ -36,8 +54,9 @@ def main():
     # Display the current board
     st.write("### Current Board:")
     
-    cols = st.columns(3)  # Create 3 columns for the board
+    # Create a 3x3 grid
     for i in range(3):
+        cols = st.columns(3)
         for j in range(3):
             with cols[j]:
                 if st.session_state.board[i][j] == "X":
