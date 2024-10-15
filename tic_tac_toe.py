@@ -27,12 +27,24 @@ def main():
     st.title("🎮 Tic-Tac-Toe Challenge 🤖")
 
     # AI type selection
-    ai_type = st.radio("Select AI Type:", ["Rule-based AI", "DQN Agent"])
+    ai_type = st.radio("Select AI Type:", ["Rule-based AI", "DQN Agent"], key="ai_type")
 
     # Difficulty selection (only for rule-based AI)
     difficulty = None
     if ai_type == "Rule-based AI":
-        difficulty = st.selectbox("Select AI Difficulty Level:", ["Easy", "Medium", "Hard"])
+        difficulty = st.selectbox("Select AI Difficulty Level:", ["Easy", "Medium", "Hard"], key="difficulty")
+
+    # Check if AI type or difficulty changed and reset game state if needed
+    if "previous_ai_type" not in st.session_state:
+        st.session_state.previous_ai_type = ai_type
+
+    if "previous_difficulty" not in st.session_state:
+        st.session_state.previous_difficulty = difficulty
+
+    if (st.session_state.previous_ai_type != ai_type) or (st.session_state.previous_difficulty != difficulty):
+        reset_game()
+        st.session_state.previous_ai_type = ai_type
+        st.session_state.previous_difficulty = difficulty
 
     # Initialize DQN Agent
     if "dqn_agent" not in st.session_state:
