@@ -30,9 +30,9 @@ class Helper:
     def minimax(cls, board, depth, is_maximizing):
         winner = cls.check_winner(board)
         if winner == 'X':
-            return -1
+            return -10 + depth
         elif winner == 'O':
-            return 1
+            return 10 - depth
         elif winner == 'Draw':
             return 0
 

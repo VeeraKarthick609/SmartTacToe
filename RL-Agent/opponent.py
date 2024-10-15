@@ -1,21 +1,22 @@
 import random
-from tic_tac_toe import minimax, get_empty_cells
+from utils.helper import Helper
+
 
 class Opponent:
-    def __init__(self, difficulty='easy'):
+    def __init__(self, difficulty="easy"):
         self.difficulty = difficulty
 
     def make_move(self, board):
-        if self.difficulty == 'easy':
+        if self.difficulty == "easy":
             return self.easy_opponent(board)
-        elif self.difficulty == 'medium':
+        elif self.difficulty == "medium":
             return self.medium_opponent(board)
         else:
             return self.hard_opponent(board)
 
     def easy_opponent(self, board):
         """Easy: Make a random move"""
-        return random.choice(get_empty_cells(board))
+        return random.choice(Helper.get_empty_cells(board))
 
     def medium_opponent(self, board):
         """Medium: Use minimax with a chance of random move"""
@@ -26,13 +27,16 @@ class Opponent:
 
     def hard_opponent(self, board):
         """Hard: Use minimax to always make the optimal move"""
-        best_score = -float('inf')
-        best_move = None
-        for (i, j) in get_empty_cells(board):
-            board[i][j] = 'O'
-            score = minimax(board, 0, False)
-            board[i][j] = ' '  # Undo move
-            if score > best_score:
-                best_score = score
-                best_move = (i, j)
-        return best_move
+        # Check if the player is about to win, block if necessary
+        for i, j in Helper.get_empty_cells(board):
+            board[i][j] = "X"  # Simulate player's move
+            if Helper.check_winner(board) == "X":
+                board[i][j] = "O"  # Block the player
+                return (i, j)
+            board[i][j] = " "  # Undo move
+
+        # If no immediate block needed, find the best move
+        best_move = Helper.get_best_move(board)
+        if best_move:
+            return best_move
+        return random.choice(Helper.get_empty_cells(board))  # If no valid move found
