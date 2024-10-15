@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     # Define difficulty levels and corresponding episode counts
     difficulties = ["easy", "medium", "hard"]
-    episodes = [200, 200, 200]
+    episodes = [5000, 10000, 20000]
 
     # Create 'weights' directory if it doesn't exist
     os.makedirs("weights", exist_ok=True)
