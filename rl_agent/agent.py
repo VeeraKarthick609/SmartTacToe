@@ -122,4 +122,4 @@ class DQNAgent:
         torch.save(self.model.state_dict(), filename)
 
     def load_model(self, filename="dqn_model.pth"):
-        self.model.load_state_dict(torch.load(filename))
+        self.model.load_state_dict(torch.load(filename, map_location=self.device))
