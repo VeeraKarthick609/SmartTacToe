@@ -7,19 +7,15 @@ def initialize_board():
 
 # Check if there's a winner or a draw
 def check_winner(board):
-    # Check rows and columns
     for i in range(3):
         if board[i][0] == board[i][1] == board[i][2] != ' ':
             return board[i][0]
         if board[0][i] == board[1][i] == board[2][i] != ' ':
             return board[0][i]
-    
-    # Check diagonals
     if board[0][0] == board[1][1] == board[2][2] != ' ':
         return board[0][0]
     if board[0][2] == board[1][1] == board[2][0] != ' ':
         return board[0][2]
-    
     return None
 
 # Get all empty cells
@@ -35,7 +31,7 @@ def minimax(board, depth, is_maximizing):
         return 1
     elif not get_empty_cells(board):  # Draw
         return 0
-    
+
     if is_maximizing:
         best_score = -float('inf')
         for (i, j) in get_empty_cells(board):
@@ -54,31 +50,63 @@ def minimax(board, depth, is_maximizing):
         return best_score
 
 # AI's best move using Minimax
-def ai_best_move(board):
-    best_score = -float('inf')
-    move = None
-    for (i, j) in get_empty_cells(board):
-        board[i][j] = 'O'
-        score = minimax(board, 0, False)
-        board[i][j] = ' '  # Undo move
-        if score > best_score:
-            best_score = score
-            move = (i, j)
-    
-    if move:
+def ai_best_move(board, difficulty):
+    if difficulty == "Easy":
+        # Make a random move
+        move = random.choice(get_empty_cells(board))
         board[move[0]][move[1]] = 'O'
+    elif difficulty == "Medium":
+        # Use Minimax but make a random mistake
+        if random.random() < 0.6:  # 60% chance to play optimally
+            best_score = -float('inf')
+            move = None
+            for (i, j) in get_empty_cells(board):
+                board[i][j] = 'O'
+                score = minimax(board, 0, False)
+                board[i][j] = ' '  # Undo move
+                if score > best_score:
+                    best_score = score
+                    move = (i, j)
+            if move:
+                board[move[0]][move[1]] = 'O'
+        else:
+            # Make a random move
+            move = random.choice(get_empty_cells(board))
+            board[move[0]][move[1]] = 'O'
+    else:  # Hard
+        # Play optimally using Minimax
+        best_score = -float('inf')
+        move = None
+        for (i, j) in get_empty_cells(board):
+            board[i][j] = 'O'
+            score = minimax(board, 0, False)
+            board[i][j] = ' '  # Undo move
+            if score > best_score:
+                best_score = score
+                move = (i, j)
+        if move:
+            board[move[0]][move[1]] = 'O'
 
 # Main game function
 def main():
     st.set_page_config(page_title="Tic-Tac-Toe AI", page_icon="🎮", layout="centered")
-    
+
     st.title("🎮 Tic-Tac-Toe Challenge 🤖")
+
+    # Difficulty selection
+    difficulty = st.selectbox("Select AI Difficulty Level:", ["Easy", "Medium", "Hard"])
 
     # Initialize session state to store game data across interactions
     if "board" not in st.session_state:
         st.session_state.board = initialize_board()
         st.session_state.current_player = "X"
         st.session_state.winner = None
+        st.session_state.player_wins = 0
+        st.session_state.ai_wins = 0
+        st.session_state.draws = 0
+
+    # Display player stats
+    st.write(f"🏆 Player Wins: {st.session_state.player_wins} | AI Wins: {st.session_state.ai_wins} | Draws: {st.session_state.draws}")
 
     # Display the current board
     st.write("### Current Board:")
@@ -102,7 +130,7 @@ def main():
                             st.session_state.winner = "Draw"
                             st.session_state.draws += 1
                         else:
-                            ai_best_move(st.session_state.board)  # AI plays
+                            ai_best_move(st.session_state.board, difficulty)  # AI plays
                             if check_winner(st.session_state.board):
                                 st.session_state.winner = "O"  # AI wins
                                 st.session_state.ai_wins += 1
