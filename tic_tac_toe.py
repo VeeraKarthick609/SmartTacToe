@@ -1,12 +1,25 @@
 import streamlit as st
-from utils.helper import Helper  # Assuming the Helper class is in a file named tic_tac_toe_helper.py
+import torch
+import numpy as np
+from utils.helper import Helper
+from rl_agent.agent import DQNAgent  # Assuming you've put your DQN code in a file named dqn_agent.py
 
 def main():
     st.set_page_config(page_title="Tic-Tac-Toe AI", page_icon="🎮", layout="centered")
     st.title("🎮 Tic-Tac-Toe Challenge 🤖")
 
-    # Difficulty selection
-    difficulty = st.selectbox("Select AI Difficulty Level:", ["Easy", "Medium", "Hard"])
+    # AI type selection
+    ai_type = st.radio("Select AI Type:", ["Rule-based AI", "DQN Agent"])
+
+    # Difficulty selection (only for rule-based AI)
+    difficulty = None
+    if ai_type == "Rule-based AI":
+        difficulty = st.selectbox("Select AI Difficulty Level:", ["Easy", "Medium", "Hard"])
+
+    # Initialize DQN Agent
+    if "dqn_agent" not in st.session_state:
+        st.session_state.dqn_agent = DQNAgent(device="cpu")  # or "cuda" if GPU is available
+        st.session_state.dqn_agent.load_model("weights/dqn_final_model.pth")  # Load pre-trained model
 
     # Initialize session state to store game data across interactions
     if "board" not in st.session_state:
@@ -33,7 +46,7 @@ def main():
                     st.button("⭕", key=f"{i}-{j}", disabled=True)
                 else:
                     if st.button("🔲", key=f"{i}-{j}") and st.session_state.winner is None:
-                        make_move(i, j, difficulty)
+                        make_move(i, j, ai_type, difficulty)
                         st.rerun()
 
     # Display winner or draw
@@ -44,7 +57,7 @@ def main():
     if st.button("🔄 New Game", key="restart"):
         reset_game()
 
-def make_move(i, j, difficulty):
+def make_move(i, j, ai_type, difficulty):
     st.session_state.board[i][j] = "X"
     st.session_state.current_player = "O"  # Switch to AI
     
@@ -53,7 +66,15 @@ def make_move(i, j, difficulty):
         update_game_state(winner)
     else:
         # AI plays
-        st.session_state.board = Helper.ai_best_move(st.session_state.board, difficulty)
+        if ai_type == "Rule-based AI":
+            st.session_state.board = Helper.ai_best_move(st.session_state.board, difficulty)
+        else:  # DQN Agent
+            flattened_board = [item for sublist in st.session_state.board for item in sublist]
+            available_actions = [i for i, x in enumerate(flattened_board) if x == " "]
+            action = st.session_state.dqn_agent.choose_action(flattened_board, available_actions)
+            row, col = action // 3, action % 3
+            st.session_state.board[row][col] = "O"
+
         winner = Helper.check_winner(st.session_state.board)
         if winner:
             update_game_state(winner)
