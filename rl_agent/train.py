@@ -27,6 +27,11 @@ def train_dqn(agent, episodes=10000, difficulty="medium", device="cpu"):
 
     rewards = []  # List to store rewards per episode
     win_counts = []  # Count of wins per episode
+    losses = []  # List to store loss per episode
+
+    epsilon = 1.0  # Start with full exploration
+    epsilon_min = 0.01  # Minimum exploration rate
+    epsilon_decay = 0.995  # Decay rate for epsilon
 
     for episode in range(episodes):
         state = env.reset()
@@ -38,8 +43,8 @@ def train_dqn(agent, episodes=10000, difficulty="medium", device="cpu"):
             flat_state = np.array(state).flatten()
             flat_state_tensor = torch.FloatTensor(state_to_numeric(flat_state)).to(device)
 
-            # Agent plays
-            action = agent.choose_action(flat_state_tensor, available_actions)
+            # Agent chooses action using epsilon-greedy strategy
+            action = agent.choose_action(flat_state_tensor, available_actions, epsilon)
             row, col = divmod(action, 3)
             next_state, reward, done = env.step((row, col), "X")
 
@@ -68,9 +73,14 @@ def train_dqn(agent, episodes=10000, difficulty="medium", device="cpu"):
             agent.store_experience(
                 flat_state, action, reward, np.array(next_state).flatten(), done
             )
-            agent.replay()
+            loss = agent.replay()  # Replay returns the loss value
+            losses.append(loss)
 
         rewards.append(total_reward)  # Append total reward for the episode
+
+        # Decay epsilon to reduce exploration over time
+        if epsilon > epsilon_min:
+            epsilon *= epsilon_decay
 
         # Print the episode details
         print(f"Difficulty: {difficulty}, Episode {episode + 1}/{episodes}: Total Reward = {total_reward}, Wins = {sum(win_counts)}")
@@ -80,11 +90,13 @@ def train_dqn(agent, episodes=10000, difficulty="medium", device="cpu"):
             agent.update_target_model()
             print(f"Updated target model at episode {episode}.")
 
-    # After training, plot the rewards and other visualizations
+    # After training, plot the rewards, loss curves, and other visualizations
     plot_rewards(rewards, difficulty)
     plot_cumulative_rewards(rewards, difficulty)
     plot_win_rate(win_counts, difficulty)
     plot_moving_average(rewards, difficulty)
+    plot_loss_curve(losses, difficulty)
+
 
 def plot_rewards(rewards, difficulty, filename=None):
     os.makedirs("graphs", exist_ok=True)
@@ -99,6 +111,7 @@ def plot_rewards(rewards, difficulty, filename=None):
     plt.savefig(filename)
     plt.close()
 
+
 def plot_cumulative_rewards(rewards, difficulty):
     cumulative_rewards = np.cumsum(rewards)
     plt.figure()
@@ -109,6 +122,7 @@ def plot_cumulative_rewards(rewards, difficulty):
     plt.grid()
     plt.savefig(f"graphs/cumulative_rewards_plot_{difficulty}.png")
     plt.close()
+
 
 def plot_win_rate(win_counts, difficulty):
     win_rate = np.array(win_counts) / np.arange(1, len(win_counts) + 1) * 100
@@ -121,6 +135,7 @@ def plot_win_rate(win_counts, difficulty):
     plt.savefig(f"graphs/win_rate_plot_{difficulty}.png")
     plt.close()
 
+
 def plot_moving_average(rewards, difficulty, window_size=100):
     moving_average = np.convolve(rewards, np.ones(window_size) / window_size, mode='valid')
     plt.figure()
@@ -132,6 +147,18 @@ def plot_moving_average(rewards, difficulty, window_size=100):
     plt.savefig(f"graphs/moving_average_plot_{difficulty}.png")
     plt.close()
 
+
+def plot_loss_curve(losses, difficulty):
+    plt.figure()
+    plt.plot(losses)
+    plt.title(f"Loss per Episode - Difficulty: {difficulty}")
+    plt.xlabel("Episode")
+    plt.ylabel("Loss")
+    plt.grid()
+    plt.savefig(f"graphs/loss_plot_{difficulty}.png")
+    plt.close()
+
+
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -140,7 +167,7 @@ if __name__ == "__main__":
 
     # Define difficulty levels and corresponding episode counts
     difficulties = ["easy", "medium", "hard"]
-    episodes = [5000, 10000, 20000]
+    episodes = [5000, 10000, 15000]
 
     # Create 'weights' directory if it doesn't exist
     os.makedirs("weights", exist_ok=True)

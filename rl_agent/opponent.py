@@ -1,7 +1,6 @@
 import random
 from utils.helper import Helper
 
-
 class Opponent:
     def __init__(self, difficulty="easy"):
         self.difficulty = difficulty
@@ -15,28 +14,84 @@ class Opponent:
             return self.hard_opponent(board)
 
     def easy_opponent(self, board):
-        """Easy: Make a random move"""
+        """Easy: Make a random move."""
         return random.choice(Helper.get_empty_cells(board))
 
     def medium_opponent(self, board):
-        """Medium: Use minimax with a chance of random move"""
+        """Medium: Use minimax with a chance of random move."""
         if random.random() < 0.6:  # 60% chance to play optimally
             return self.hard_opponent(board)
         else:
             return self.easy_opponent(board)
 
     def hard_opponent(self, board):
-        """Hard: Use minimax to always make the optimal move"""
-        # Check if the player is about to win, block if necessary
-        for i, j in Helper.get_empty_cells(board):
-            board[i][j] = "X"  # Simulate player's move
-            if Helper.check_winner(board) == "X":
-                board[i][j] = "O"  # Block the player
-                return (i, j)
-            board[i][j] = " "  # Undo move
+        """Hard: Use minimax to play optimally with a chance of randomness."""
+        if random.random() < 0.2:  # 20% chance to make a random (suboptimal) move
+            return random.choice(Helper.get_empty_cells(board))
 
-        # If no immediate block needed, find the best move
-        best_move = Helper.get_best_move(board)
-        if best_move:
-            return best_move
-        return random.choice(Helper.get_empty_cells(board))  # If no valid move found
+        best_score = float('-inf')
+        best_move = None
+
+        for move in Helper.get_empty_cells(board):
+            row, col = move
+            board[row][col] = "O"  # Simulate opponent's move
+
+            # Evaluate the move using minimax
+            score = self.minimax(board, depth=0, is_maximizing=False, alpha=float('-inf'), beta=float('inf'))
+
+            board[row][col] = " "  # Undo the move
+
+            if score > best_score:
+                best_score = score
+                best_move = (row, col)
+
+        return best_move
+
+    def minimax(self, board, depth, is_maximizing, alpha, beta):
+        # Check for terminal conditions
+        if self.check_win(board, "O"):
+            return 1  # Opponent wins
+        elif self.check_win(board, "X"):
+            return -1  # Player wins
+        elif not Helper.get_empty_cells(board):
+            return 0  # Draw
+
+        if is_maximizing:
+            max_eval = float('-inf')
+            for move in Helper.get_empty_cells(board):
+                row, col = move
+                board[row][col] = "O"  # Simulate opponent's move
+                eval = self.minimax(board, depth + 1, False, alpha, beta)
+                board[row][col] = " "  # Undo the move
+                max_eval = max(max_eval, eval)
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break  # Beta cut-off
+            return max_eval
+        else:
+            min_eval = float('inf')
+            for move in Helper.get_empty_cells(board):
+                row, col = move
+                board[row][col] = "X"  # Simulate player's move
+                eval = self.minimax(board, depth + 1, True, alpha, beta)
+                board[row][col] = " "  # Undo the move
+                min_eval = min(min_eval, eval)
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break  # Alpha cut-off
+            return min_eval
+
+    def check_win(self, board, player):
+        """Check rows, columns, and diagonals for a win."""
+        # Check rows
+        for row in range(3):
+            if all([cell == player for cell in board[row]]):
+                return True
+        # Check columns
+        for col in range(3):
+            if all([board[row][col] == player for row in range(3)]):
+                return True
+        # Check diagonals
+        if all([board[i][i] == player for i in range(3)]) or all([board[i][2 - i] == player for i in range(3)]):
+            return True
+        return False
